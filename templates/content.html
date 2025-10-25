@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Content & Ratings</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        nav { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #007bff; }
+        nav a { margin-right: 15px; text-decoration: none; color: #007bff; padding: 5px 10px; }
+        nav a:hover { background-color: #e6f2ff; border-radius: 4px; }
+        .content-card { border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; transition: transform 0.2s; }
+        .content-card:hover { transform: translateX(5px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .content-details { flex-grow: 1; }
+        .content-rating { font-weight: bold; color: #d6b300; font-size: 1.2em; }
+        .form-group { margin-top: 15px; padding: 15px; border-top: 1px dashed #ccc; background: #f9f9f9; border-radius: 5px; }
+        .status-message { margin-top: 15px; padding: 10px; border-radius: 5px; }
+        input, select { padding: 5px; border: 1px solid #ddd; border-radius: 4px; margin: 0 5px; }
+        button { background-color: #007bff; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .watch-btn { background-color: #28a745; }
+        .watch-btn:hover { background-color: #218838; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Content Explorer</h1>
+        <nav>
+            <a href="/">Dashboard</a>
+            <a href="/renew">Renew Subscription</a>
+            <a href="/content">Browse Content</a>
+            <a href="/watchlist">My Watchlist</a>
+            <a href="/recommendations">Recommendations</a>
+            <a href="/search">Search</a>
+            <a href="/users">Users</a>
+            <a href="/analytics">Analytics</a>
+        </nav>
+        <hr>
+
+        <h2>All Content</h2>
+        <p><strong>Note:</strong> Content Rating and Total Views are automatically updated by MySQL Triggers when ratings or watch history are added.</p>
+
+        <div id="contentList">Loading content...</div>
+
+        <div class="form-group">
+            <h3>📝 Add New Rating (Trigger Demo)</h3>
+            <p>When you submit a rating, the <code>trg_update_content_rating</code> trigger automatically recalculates the average rating!</p>
+            <div>
+                <label>Profile ID:</label>
+                <input type="number" id="profileId" value="1" min="1" style="width: 70px;">
+                <label>Content ID:</label>
+                <input type="number" id="contentId" value="1" min="1" style="width: 70px;">
+                <label>Rating (1-5):</label>
+                <input type="number" id="rating" value="5" min="1" max="5" style="width: 70px;">
+                <label>Review:</label>
+                <input type="text" id="review" placeholder="Your review..." style="width: 200px;">
+                <button onclick="addRating()">Submit Rating</button>
+            </div>
+            <div id="ratingStatus" class="status-message"></div>
+        </div>
+
+        <div class="form-group">
+            <h3>📺 Record Watch Progress (Trigger Demo)</h3>
+            <p>When you record watch progress, the <code>trg_update_total_views</code> trigger increments the view count!</p>
+            <div>
+                <label>Profile ID:</label>
+                <input type="number" id="watchProfileId" value="1" min="1" style="width: 70px;">
+                <label>Content ID:</label>
+                <input type="number" id="watchContentId" value="1" min="1" style="width: 70px;">
+                <label>Progress (%):</label>
+                <input type="number" id="progress" value="50" min="0" max="100" style="width: 70px;">
+                <button class="watch-btn" onclick="recordWatch()">Record Progress</button>
+            </div>
+            <div id="watchStatus" class="status-message"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', loadContent);
+
+        function loadContent() {
+            const contentListDiv = document.getElementById('contentList');
+            contentListDiv.innerHTML = 'Loading content...';
+
+            fetch('/api/content/all')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'error') {
+                        contentListDiv.innerHTML = `<p style="background-color: #fdd; padding: 10px; border-radius: 5px;">${data.message}</p>`;
+                        return;
+                    }
+
+                    let html = '';
+                    data.forEach(content => {
+                        html += `
+                        <div class="content-card">
+                            <div class="content-details">
+                                <strong style="font-size: 1.1em;">[ID: ${content.Content_Id}] ${content.Title}</strong>
+                                <br>
+                                <span style="color: #666;">${content.Type} | ${content.Release_Year} | ${content.Language}</span>
+                            </div>
+                            <div style="text-align: right;">
+                                <span class="content-rating">⭐ ${content.Content_Rating ? content.Content_Rating.toFixed(2) : 'N/A'}</span>
+                                <br>
+                                <span style="color: #28a745; font-weight: bold;">👁 ${content.Total_Views} views</span>
+                            </div>
+                        </div>
+                        `;
+                    });
+                    contentListDiv.innerHTML = html;
+                })
+                .catch(error => {
+                    contentListDiv.innerHTML = `<p style="background-color: #fdd; padding: 10px; border-radius: 5px;">Error loading content: ${error.message}</p>`;
+                });
+        }
+
+        function addRating() {
+            const profileId = document.getElementById('profileId').value;
+            const contentId = document.getElementById('contentId').value;
+            const rating = document.getElementById('rating').value;
+            const review = document.getElementById('review').value;
+            const statusDiv = document.getElementById('ratingStatus');
+
+            if (!profileId || !contentId || !rating) {
+                statusDiv.innerHTML = '<p style="background-color: #fdd;">Please fill all required fields</p>';
+                return;
+            }
+
+            statusDiv.innerHTML = '<p style="background-color: #e6f7ff;">Submitting rating...</p>';
+
+            fetch('/api/content/rate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ profile_id: profileId, content_id: contentId, rating: rating, review: review })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    statusDiv.innerHTML = `<p style="background-color: #e6ffe6;">${data.message} - The content rating has been updated automatically!</p>`;
+                    setTimeout(() => loadContent(), 1000);
+                } else {
+                    statusDiv.innerHTML = `<p style="background-color: #fdd;">Failed: ${data.message}</p>`;
+                }
+            })
+            .catch(error => {
+                statusDiv.innerHTML = `<p style="background-color: #fdd;">Network error: ${error.message}</p>`;
+            });
+        }
+
+        function recordWatch() {
+            const profileId = document.getElementById('watchProfileId').value;
+            const contentId = document.getElementById('watchContentId').value;
+            const progress = document.getElementById('progress').value;
+            const statusDiv = document.getElementById('watchStatus');
+
+            if (!profileId || !contentId || progress === '') {
+                statusDiv.innerHTML = '<p style="background-color: #fdd;">Please fill all required fields</p>';
+                return;
+            }
+
+            statusDiv.innerHTML = '<p style="background-color: #e6f7ff;">Recording watch progress...</p>';
+
+            fetch('/api/user/watch-progress', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ profile_id: profileId, content_id: contentId, progress: progress })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    statusDiv.innerHTML = `<p style="background-color: #e6ffe6;">${data.message} - The view count has been incremented automatically!</p>`;
+                    setTimeout(() => loadContent(), 1000);
+                } else {
+                    statusDiv.innerHTML = `<p style="background-color: #fdd;">Failed: ${data.message}</p>`;
+                }
+            })
+            .catch(error => {
+                statusDiv.innerHTML = `<p style="background-color: #fdd;">Network error: ${error.message}</p>`;
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Renew Subscription</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        nav { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #007bff; }
+        nav a { margin-right: 15px; text-decoration: none; color: #007bff; padding: 5px 10px; }
+        nav a:hover { background-color: #e6f2ff; border-radius: 4px; }
+        .form-section { background: #f9f9f9; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: inline-block; width: 150px; font-weight: bold; }
+        input[type="number"], select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 200px; }
+        button { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; }
+        button:hover { background-color: #0056b3; }
+        .status-message { margin-top: 15px; padding: 15px; border-radius: 5px; }
+        .info-box { background: #e6f7ff; padding: 15px; border-left: 4px solid #007bff; border-radius: 4px; margin-bottom: 20px; }
+        .plan-info { background: white; padding: 15px; border-radius: 5px; margin-top: 15px; border: 1px solid #ddd; }
+        .plan-card { display: inline-block; padding: 10px 15px; margin: 5px; border-radius: 5px; font-weight: bold; }
+        .plan-basic { background: #6c757d; color: white; }
+        .plan-standard { background: #17a2b8; color: white; }
+        .plan-premium { background: #ffc107; color: black; }
+        .plan-ultra { background: #dc3545; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💳 Subscription Renewal</h1>
+        <nav>
+            <a href="/">Dashboard</a>
+            <a href="/renew">Renew Subscription</a>
+            <a href="/content">Browse Content</a>
+            <a href="/watchlist">My Watchlist</a>
+            <a href="/recommendations">Recommendations</a>
+            <a href="/search">Search</a>
+            <a href="/users">Users</a>
+            <a href="/analytics">Analytics</a>
+        </nav>
+        <hr>
+        
+        <div class="info-box">
+            <h3 style="margin-top: 0;">🎯 Trigger Demonstration</h3>
+            <p>This page demonstrates the <code>sp_renew_subscription</code> stored procedure and the <code>trg_subscription_renewal</code> trigger.</p>
+            <p><strong>What happens:</strong> When you renew, the trigger automatically updates the subscription start date, end date, and last renewal date in the database.</p>
+        </div>
+
+        <div class="plan-info">
+            <h3>Available Subscription Plans</h3>
+            <div>
+                <span class="plan-card plan-basic">Basic - ₹199.99/month</span>
+                <span class="plan-card plan-standard">Standard - ₹299.99/month</span>
+                <span class="plan-card plan-premium">Premium - ₹499.99/month</span>
+                <span class="plan-card plan-ultra">Ultra - ₹699.99/month</span>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h2>Renew Your Subscription</h2>
+            
+            <div class="form-group">
+                <label for="renewUserId">User ID:</label>
+                <input type="number" id="renewUserId" value="1" min="1" max="25">
+                <small style="color: #666; margin-left: 10px;">(Valid IDs: 1-25)</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="paymentMethod">Payment Method:</label>
+                <select id="paymentMethod">
+                    <option value="Credit Card">Credit Card</option>
+                    <option value="Debit Card">Debit Card</option>
+                    <option value="UPI">UPI</option>
+                    <option value="PayPal">PayPal</option>
+                    <option value="Net Banking">Net Banking</option>
+                </select>
+            </div>
+            
+            <button onclick="renewSubscription()" style="margin-top: 10px;">
+                🔄 Renew Subscription Now
+            </button>
+        </div>
+
+        <div id="renewalStatus" class="status-message"></div>
+
+        <div class="form-section" style="margin-top: 30px;">
+            <h3>Check Current Subscription Status</h3>
+            <div class="form-group">
+                <label for="checkUserId">User ID:</label>
+                <input type="number" id="checkUserId" value="1" min="1" max="25">
+                <button onclick="checkSubscription()">Check Status</button>
+            </div>
+            <div id="subscriptionInfo"></div>
+        </div>
+    </div>
+
+    <script>
+        function renewSubscription() {
+            const userId = document.getElementById('renewUserId').value;
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            const statusDiv = document.getElementById('renewalStatus');
+            
+            if (!userId) {
+                statusDiv.innerHTML = '<p style="background-color: #fdd;">Please enter a valid User ID</p>';
+                return;
+            }
+
+            statusDiv.innerHTML = '<p style="background-color: #e6f7ff;">Processing renewal... Please wait...</p>';
+
+            fetch('/api/subscription/renew', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ user_id: userId, payment_method: paymentMethod })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    statusDiv.innerHTML = `
+                        <p style="background-color: #e6ffe6;">
+                            ✅ ${data.message}
+                            <br><br>
+                            <strong>Database Trigger Fired!</strong><br>
+                            The following fields were automatically updated:<br>
+                            • Subscription_Start_Date → Current Date<br>
+                            • Subscription_End_Date → Current Date + Plan Validity<br>
+                            • Last_Renewal_Date → Current Date
+                        </p>
+                    `;
+                    
+                    // Auto-check subscription after 1 second
+                    setTimeout(() => {
+                        document.getElementById('checkUserId').value = userId;
+                        checkSubscription();
+                    }, 1000);
+                } else {
+                    statusDiv.innerHTML = `<p style="background-color: #fdd;">❌ Renewal failed: ${data.message}</p>`;
+                }
+            })
+            .catch(error => {
+                statusDiv.innerHTML = `<p style="background-color: #fdd;">❌ Network error: ${error.message}</p>`;
+            });
+        }
+
+        function checkSubscription() {
+            const userId = document.getElementById('checkUserId').value;
+            const infoDiv = document.getElementById('subscriptionInfo');
+
+            if (!userId) {
+                infoDiv.innerHTML = '<p style="background-color: #fdd; padding: 10px; border-radius: 5px;">Please enter a User ID</p>';
+                return;
+            }
+
+            infoDiv.innerHTML = '<p style="padding: 10px;">Loading...</p>';
+
+            fetch(`/api/subscription/info/${userId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'error') {
+                        infoDiv.innerHTML = `<p style="background-color: #fdd; padding: 10px; border-radius: 5px;">${data.message}</p>`;
+                        return;
+                    }
+
+                    if (data.length === 0) {
+                        infoDiv.innerHTML = `<p style="background-color: #fffacd; padding: 10px; border-radius: 5px;">No subscription found for User ${userId}</p>`;
+                        return;
+                    }
+
+                    const sub = data[0];
+                    const isActive = sub.Days_Remaining >= 0;
+                    const statusColor = isActive ? '#28a745' : '#dc3545';
+                    const bgColor = isActive ? '#e6ffe6' : '#fdd';
+
+                    let html = `
+                    <div style="background: ${bgColor}; padding: 15px; border-radius: 5px; margin-top: 15px; border: 2px solid ${statusColor};">
+                        <h4 style="margin-top: 0; color: ${statusColor};">
+                            ${isActive ? '✅ Active Subscription' : '❌ Expired Subscription'}
+                        </h4>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 5px; font-weight: bold;">User:</td>
+                                <td style="padding: 5px;">${sub.Name} (${sub.Email})</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px; font-weight: bold;">Plan:</td>
+                                <td style="padding: 5px;">${sub.Plan_Name} - ₹${sub.Price}/month</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px; font-weight: bold;">Validity:</td>
+                                <td style="padding: 5px;">${sub.Validity} days</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px; font-weight: bold;">Start Date:</td>
+                                <td style="padding: 5px;">${sub.Subscription_Start_Date || 'Not set'}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px; font-weight: bold;">End Date:</td>
+                                <td style="padding: 5px;">${sub.Subscription_End_Date || 'Not set'}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px; font-weight: bold;">Days Remaining:</td>
+                                <td style="padding: 5px; color: ${statusColor}; font-weight: bold;">
+                                    ${sub.Days_Remaining !== null ? sub.Days_Remaining + ' days' : 'N/A'}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    `;
+                    infoDiv.innerHTML = html;
+                })
+                .catch(error => {
+                    infoDiv.innerHTML = `<p style="background-color: #fdd; padding: 10px; border-radius: 5px;">Error: ${error.message}</p>`;
+                });
+        }
+
+        // Auto-load subscription info for User 1 on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkSubscription();
+        });
+    </script>
+</body>
+</html>

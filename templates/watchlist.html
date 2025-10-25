@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Watchlist</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        nav { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #007bff; }
+        nav a { margin-right: 15px; text-decoration: none; color: #007bff; padding: 5px 10px; }
+        nav a:hover { background-color: #e6f2ff; border-radius: 4px; }
+        .form-section { background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 10px; }
+        input[type="number"], select { padding: 5px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background-color: #007bff; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .watchlist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        .watchlist-card { border: 1px solid #ddd; padding: 15px; border-radius: 5px; background: white; transition: transform 0.2s; }
+        .watchlist-card:hover { transform: translateY(-5px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .card-title { font-size: 1.2em; font-weight: bold; color: #333; margin-bottom: 10px; }
+        .card-info { color: #666; font-size: 0.9em; margin: 5px 0; }
+        .card-rating { color: #d6b300; font-weight: bold; }
+        .remove-btn { background-color: #dc3545; margin-top: 10px; }
+        .remove-btn:hover { background-color: #c82333; }
+        .status-message { padding: 10px; border-radius: 5px; margin-top: 10px; }
+        .empty-state { text-align: center; padding: 40px; color: #999; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>My Watchlist</h1>
+        <nav>
+            <a href="/">Dashboard</a>
+            <a href="/renew">Renew Subscription</a>
+            <a href="/content">Browse Content</a>
+            <a href="/watchlist">My Watchlist</a>
+            <a href="/recommendations">Recommendations</a>
+            <a href="/search">Search</a>
+            <a href="/users">Users</a>
+            <a href="/analytics">Analytics</a>
+        </nav>
+
+        <div class="form-section">
+            <h3>Select Profile</h3>
+            <div class="form-group">
+                <label for="profileId">Profile ID:</label>
+                <input type="number" id="profileId" value="1" min="1">
+                <button onclick="loadWatchlist()">Load Watchlist</button>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Add to Watchlist</h3>
+            <div class="form-group">
+                <label for="addProfileId">Profile ID:</label>
+                <input type="number" id="addProfileId" value="1" min="1" style="width: 80px;">
+                <label for="addContentId">Content ID:</label>
+                <input type="number" id="addContentId" value="1" min="1" style="width: 80px;">
+                <button onclick="addToWatchlist()">Add to Watchlist</button>
+            </div>
+            <div id="addStatus" class="status-message"></div>
+        </div>
+
+        <h2>Watchlist Items</h2>
+        <div id="watchlistContainer">
+            <div class="empty-state">Select a profile to view watchlist</div>
+        </div>
+    </div>
+
+    <script>
+        function loadWatchlist() {
+            const profileId = document.getElementById('profileId').value;
+            const container = document.getElementById('watchlistContainer');
+            container.innerHTML = '<div class="empty-state">Loading...</div>';
+
+            fetch(`/api/watchlist/${profileId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'error') {
+                        container.innerHTML = `<div class="empty-state" style="color: #dc3545;">${data.message}</div>`;
+                        return;
+                    }
+
+                    if (data.length === 0) {
+                        container.innerHTML = '<div class="empty-state">No items in watchlist</div>';
+                        return;
+                    }
+
+                    let html = '<div class="watchlist-grid">';
+                    data.forEach(item => {
+                        html += `
+                        <div class="watchlist-card">
+                            <div class="card-title">${item.Title}</div>
+                            <div class="card-info">Type: ${item.Type}</div>
+                            <div class="card-info">Year: ${item.Release_Year}</div>
+                            <div class="card-info">Genre: ${item.Genre || 'N/A'}</div>
+                            <div class="card-info card-rating">Rating: ${item.Content_Rating || 'N/A'}</div>
+                            <div class="card-info">Added: ${item.Added_Date}</div>
+                            <button class="remove-btn" onclick="removeFromWatchlist(${item.Watchlist_Id})">Remove</button>
+                        </div>
+                        `;
+                    });
+                    html += '</div>';
+                    container.innerHTML = html;
+                })
+                .catch(error => {
+                    container.innerHTML = `<div class="empty-state" style="color: #dc3545;">Error: ${error.message}</div>`;
+                });
+        }
+
+        function addToWatchlist() {
+            const profileId = document.getElementById('addProfileId').value;
+            const contentId = document.getElementById('addContentId').value;
+            const statusDiv = document.getElementById('addStatus');
+
+            statusDiv.innerHTML = '<p style="background-color: #e6f7ff;">Adding to watchlist...</p>';
+
+            fetch('/api/watchlist/add', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ profile_id: profileId, content_id: contentId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    statusDiv.innerHTML = `<p style="background-color: #e6ffe6;">${data.message}</p>`;
+                    setTimeout(() => { statusDiv.innerHTML = ''; }, 3000);
+                    if (document.getElementById('profileId').value == profileId) {
+                        loadWatchlist();
+                    }
+                } else {
+                    statusDiv.innerHTML = `<p style="background-color: #fdd;">Error: ${data.message}</p>`;
+                }
+            })
+            .catch(error => {
+                statusDiv.innerHTML = `<p style="background-color: #fdd;">Network error: ${error.message}</p>`;
+            });
+        }
+
+        function removeFromWatchlist(watchlistId) {
+            if (!confirm('Remove this item from watchlist?')) return;
+
+            fetch(`/api/watchlist/remove/${watchlistId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    loadWatchlist();
+                } else {
+                    alert('Error removing item: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Network error: ' + error.message);
+            });
+        }
+    </script>
+</body>
+</html>

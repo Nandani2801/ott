@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>OTT Platform Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        nav { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #007bff; }
+        nav a { margin-right: 15px; text-decoration: none; color: #007bff; padding: 5px 10px; }
+        nav a:hover { background-color: #e6f2ff; border-radius: 4px; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
+        .dashboard-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 10px; text-align: center; cursor: pointer; transition: transform 0.3s; }
+        .dashboard-card:hover { transform: translateY(-5px); box-shadow: 0 8px 16px rgba(0,0,0,0.2); }
+        .dashboard-card h3 { margin: 0 0 10px 0; font-size: 1.5em; }
+        .dashboard-card p { margin: 5px 0; opacity: 0.9; }
+        .card-icon { font-size: 3em; margin-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .result-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .result-table th, .result-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .result-table th { background-color: #007bff; color: white; }
+        .result-table tr:nth-child(even) { background-color: #f9f9f9; }
+        .status-message { margin-top: 15px; padding: 10px; border-radius: 5px; }
+        input[type="number"] { padding: 5px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background-color: #007bff; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .feature-section { background: #f9f9f9; padding: 20px; border-radius: 8px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 OTT Platform Dashboard</h1>
+        <nav>
+            <a href="/">Dashboard</a>
+            <a href="/renew">Renew Subscription</a>
+            <a href="/content">Browse Content</a>
+            <a href="/watchlist">My Watchlist</a>
+            <a href="/recommendations">Recommendations</a>
+            <a href="/search">Search</a>
+            <a href="/users">Users</a>
+            <a href="/analytics">Analytics</a>
+        </nav>
+        
+        <h2>Quick Access</h2>
+        <div class="dashboard-grid">
+            <div class="dashboard-card" onclick="window.location.href='/content'" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-icon">🎥</div>
+                <h3>Browse Content</h3>
+                <p>Explore movies and series</p>
+                <p>View ratings and reviews</p>
+            </div>
+
+            <div class="dashboard-card" onclick="window.location.href='/watchlist'" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="card-icon">📝</div>
+                <h3>My Watchlist</h3>
+                <p>Manage your watchlist</p>
+                <p>Add or remove content</p>
+            </div>
+
+            <div class="dashboard-card" onclick="window.location.href='/recommendations'" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="card-icon">✨</div>
+                <h3>Recommendations</h3>
+                <p>Get personalized suggestions</p>
+                <p>Based on your history</p>
+            </div>
+
+            <div class="dashboard-card" onclick="window.location.href='/search'" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="card-icon">🔍</div>
+                <h3>Search Content</h3>
+                <p>Find movies and series</p>
+                <p>Filter by genre</p>
+            </div>
+
+            <div class="dashboard-card" onclick="window.location.href='/renew'" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                <div class="card-icon">💳</div>
+                <h3>Subscription</h3>
+                <p>Manage your plan</p>
+                <p>Renew subscription</p>
+            </div>
+
+            <div class="dashboard-card" onclick="window.location.href='/analytics'" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);">
+                <div class="card-icon">📊</div>
+                <h3>Analytics</h3>
+                <p>View platform statistics</p>
+                <p>Top rated & popular content</p>
+            </div>
+        </div>
+
+        <div class="feature-section">
+            <h2>View Your Watch History</h2>
+            <p>Check your watch history and progress across all profiles.</p>
+            
+            <div class="form-group">
+                <label for="userId">Enter User ID (e.g., 1, 2, 5):</label>
+                <input type="number" id="userId" value="1" min="1" max="25">
+                <button onclick="loadUserSummary()">Load Watch History</button>
+            </div>
+
+            <div id="summaryTableContainer">
+                <p style="color: #666; font-style: italic;">Enter a User ID and click Load Watch History to see data.</p>
+            </div>
+        </div>
+
+        <div class="feature-section">
+            <h2>Check Subscription Status</h2>
+            <div class="form-group">
+                <label for="subUserId">Enter User ID:</label>
+                <input type="number" id="subUserId" value="1" min="1" max="25">
+                <button onclick="loadSubscriptionInfo()">Check Subscription</button>
+            </div>
+
+            <div id="subscriptionContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        function loadUserSummary() {
+            const userId = document.getElementById('userId').value;
+            const container = document.getElementById('summaryTableContainer');
+            container.innerHTML = '<p>Loading...</p>';
+
+            fetch(`/api/user/summary/${userId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'error') {
+                        container.innerHTML = `<p class="status-message" style="background-color: #fdd">${data.message}</p>`;
+                        return;
+                    }
+                    if (data.length === 0) {
+                        container.innerHTML = `<p class="status-message" style="background-color: #fffacd">No watch history found for User ${userId}.</p>`;
+                        return;
+                    }
+
+                    let tableHTML = '<table class="result-table"><thead><tr><th>Profile</th><th>Content Title</th><th>Progress (%)</th><th>Watch Date</th></tr></thead><tbody>';
+                    data.forEach(item => {
+                        tableHTML += `<tr>
+                            <td>${item.Profile_Name}</td>
+                            <td>${item.Content_Title}</td>
+                            <td>${item.Progress}%</td>
+                            <td>${item.Watch_Date}</td>
+                        </tr>`;
+                    });
+                    tableHTML += '</tbody></table>';
+                    container.innerHTML = tableHTML;
+                })
+                .catch(error => {
+                    container.innerHTML = `<p class="status-message" style="background-color: #fdd">Error loading summary: ${error.message}</p>`;
+                });
+        }
+
+        function loadSubscriptionInfo() {
+            const userId = document.getElementById('subUserId').value;
+            const container = document.getElementById('subscriptionContainer');
+            container.innerHTML = '<p>Loading...</p>';
+
+            fetch(`/api/subscription/info/${userId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'error') {
+                        container.innerHTML = `<p class="status-message" style="background-color: #fdd">${data.message}</p>`;
+                        return;
+                    }
+                    
+                    if (data.length === 0) {
+                        container.innerHTML = `<p class="status-message" style="background-color: #fffacd">No subscription found for User ${userId}.</p>`;
+                        return;
+                    }
+
+                    const sub = data[0];
+                    const statusColor = sub.Days_Remaining >= 0 ? '#e6ffe6' : '#fdd';
+                    const statusText = sub.Days_Remaining >= 0 ? 'Active' : 'Expired';
+
+                    let html = `
+                    <div style="background: ${statusColor}; padding: 15px; border-radius: 5px; margin-top: 10px;">
+                        <h3 style="margin-top: 0;">Subscription Details for ${sub.Name}</h3>
+                        <p><strong>Email:</strong> ${sub.Email}</p>
+                        <p><strong>Plan:</strong> ${sub.Plan_Name} (₹${sub.Price}/month)</p>
+                        <p><strong>Validity:</strong> ${sub.Validity} days</p>
+                        <p><strong>Start Date:</strong> ${sub.Subscription_Start_Date || 'N/A'}</p>
+                        <p><strong>End Date:</strong> ${sub.Subscription_End_Date || 'N/A'}</p>
+                        <p><strong>Days Remaining:</strong> ${sub.Days_Remaining !== null ? sub.Days_Remaining : 'N/A'}</p>
+                        <p><strong>Status:</strong> <span style="font-weight: bold; color: ${sub.Days_Remaining >= 0 ? 'green' : 'red'};">${statusText}</span></p>
+                    </div>
+                    `;
+                    container.innerHTML = html;
+                })
+                .catch(error => {
+                    container.innerHTML = `<p class="status-message" style="background-color: #fdd">Error: ${error.message}</p>`;
+                });
+        }
+    </script>
+</body>
+</html>
